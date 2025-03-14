@@ -55,7 +55,7 @@ local Getkey = Tabs.KeySys:AddButton({
 		Title = "Get Key Premium",
 		Description = "Get Key here for premuim",
 		Callback = function()
-				setclipboard(discord.gg/JaPpBufYVW)
+				setclipboard(gg/JaPpBufYVW)
 		end
 })
 
