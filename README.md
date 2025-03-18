@@ -75,8 +75,8 @@ local Getkey = Tabs.KeySys:AddButton({
 })
 
 local Getkey = Tabs.KeySys:AddButton({
-		Title = "Get Key For Freemium",
-		Description = "Get Key here paste in to your browser it tooks 3 steps its keysystem",
+		Title = "Get Key For Premmium",
+		Description = "Get Key here paste in to your browser it worth bec it will be more paid scripts and it will took longer to do checkpoints in future",
 		Callback = function()
 				setclipboard("hackmanhub.pages.dev")
 		end
