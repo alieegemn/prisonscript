@@ -1,6 +1,6 @@
 local KeyGuardLibrary = loadstring(game:HttpGet("https://cdn.keyguardian.org/library/v1.0.0.lua"))()
-local trueData = "c2b3f77225414994a10515d675be54c7"
-local falseData = "ae0f8d6a808343c997e238178373c59d"
+local trueData = "2299de6eec1f430e805215a8cf3c920e"
+local falseData = "3fd7f5d44e7f4e1e989ac99dd749a710"
 
 KeyGuardLibrary.Set({
 	publicToken = "86b13899139841ce8ffca6b7aca4b739",
@@ -27,7 +27,7 @@ local Tabs = {
 }
 
 local Entkey = Tabs.KeySys:AddInput("Input", {
-		Title = "Enter Key",
+		Title = "Enter Key Fremium/Premium",
 		Description = "Enter Key Here",
 		Default = "",
 		Placeholder = "Enter key…",
@@ -39,23 +39,46 @@ local Entkey = Tabs.KeySys:AddInput("Input", {
 })
 
 local Checkkey = Tabs.KeySys:AddButton({
-		Title = "Check Key",
+		Title = "Check Key For Freemium",
+		Description = "Enter Key before pressing this button",
+		Callback = function()
+				local response = KeyGuardLibrary.validateDefaultKey(key)
+				if response == trueData then
+						loadstring(game:HttpGet("https://raw.githubusercontent.com/alieegemn/statviewguyme/refs/heads/main/freemium"))()
+						
+				else
+						print("Key is invalid try to use premium")
+				end
+		end
+})
+
+local Checkkey = Tabs.KeySys:AddButton({
+		Title = "Check Key For Premium",
 		Description = "Enter Key before pressing this button",
 		Callback = function()
 				local response = KeyGuardLibrary.validatePremiumKey(key)
 				if response == trueData then
-				loadstring(game:HttpGet("https://raw.githubusercontent.com/alieegemn/statviewguyme/refs/heads/main/v2"))()
+						loadstring(game:HttpGet("https://raw.githubusercontent.com/alieegemn/statviewguyme/refs/heads/main/premium"))()
+						
 				else
-						print("Key is invalid")
+						print("Key is invalid try to use freemium or your key got broken or get expired")
 				end
 		end
 })
 
 local Getkey = Tabs.KeySys:AddButton({
-		Title = "Get Key Premium",
-		Description = "Get Key here for premuim",
+		Title = "Get Key For Freemium",
+		Description = "Get Key here paste in to your browser it tooks 3 steps its keysystem",
 		Callback = function()
-				setclipboard(gg/JaPpBufYVW)
+				setclipboard(KeyGuardLibrary.getLink())
+		end
+})
+
+local Getkey = Tabs.KeySys:AddButton({
+		Title = "Get Key For Freemium",
+		Description = "Get Key here paste in to your browser it tooks 3 steps its keysystem",
+		Callback = function()
+				setclipboard("hackmanhub.pages.dev")
 		end
 })
 
