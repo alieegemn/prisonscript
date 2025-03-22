@@ -71,14 +71,24 @@ local Getkey = Tabs.KeySys:AddButton({
 		Description = "Get Key here paste in to your browser it tooks 3 steps its keysystem",
 		Callback = function()
 				setclipboard(KeyGuardLibrary.getLink())
+   	Fluent:Notify({
+    	Title = "HackManHub",
+  	Content = "Coped On Clipboard",
+   	Duration = 8
+	})
 		end
 })
 
 local Getkey = Tabs.KeySys:AddButton({
-		Title = "Get Key For Premmium",
+		Title = "Get Key For Premium",
 		Description = "Get Key here paste in to your browser it worth bec it will be more paid scripts and it will took longer to do checkpoints in future",
 		Callback = function()
 				setclipboard("hackmanhub.pages.dev")
+       	Fluent:Notify({
+    	Title = "HackManHub",
+  	Content = "Coped On Clipboard",
+   	Duration = 8
+	})
 		end
 })
 
