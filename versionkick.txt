@@ -1,3 +1,1 @@
-if version ~= ".0" then
-    game:GetService("Players").LocalPlayer:Kick("Outdated, go to https://discord.gg/KmtXAzbDTy")
-end
+game:GetService("Players").LocalPlayer:Kick("Outdated, go to https://discord.gg/KmtXAzbDTy
