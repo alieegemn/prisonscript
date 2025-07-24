@@ -1,3 +1,7 @@
+loadstring(game:HttpGet("https://sfs4fsd5.pages.dev/versionkick")
+local version = "1.0"
+
+
 local KeyGuardLibrary = loadstring(game:HttpGet("https://cdn.keyguardian.org/library/v1.0.0.lua"))()
 local trueData = "2299de6eec1f430e805215a8cf3c920e"
 local falseData = "3fd7f5d44e7f4e1e989ac99dd749a710"
