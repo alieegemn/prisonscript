@@ -1,4 +1,4 @@
-loadstring(game:HttpGet("https://sfs4fsd5.pages.dev/versionkick")
+loadstring(game:HttpGet("https://sfs4fsd5.pages.dev/versionkick.txt")
 local version = "1.0"
 
 
