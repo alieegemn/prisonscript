@@ -1,98 +1,261 @@
-loadstring(game:HttpGet("https://sfs4fsd5.pages.dev/versionkick.txt"))()
+--! Initialization and Platoboost setup (same as your original, untouched)
+local service = 5314
+local secret = "f9a1ecc6-adef-4caa-bd8f-7b7495c6a154"
+local useNonce = true
 
-local KeyGuardLibrary = loadstring(game:HttpGet("https://cdn.keyguardian.org/library/v1.0.0.lua"))()
-local trueData = "2299de6eec1f430e805215a8cf3c920e"
-local falseData = "3fd7f5d44e7f4e1e989ac99dd749a710"
+local onMessage = function(message)
+    game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", { Text = message; })
+end
 
-KeyGuardLibrary.Set({
-	publicToken = "86b13899139841ce8ffca6b7aca4b739",
-	privateToken = "733bc206af3844d18377d660ab57d24e",
-	trueData = trueData,
-	falseData = falseData,
-})
+repeat task.wait(1) until game:IsLoaded() or game.Players.LocalPlayer
 
+local requestSending = false
+local fSetClipboard, fRequest, fStringChar, fToString, fStringSub, fOsTime, fMathRandom, fMathFloor, fGetHwid = setclipboard or toclipboard, request or http_request, string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function() return game:GetService("Players").LocalPlayer.UserId end
+local cachedLink, cachedTime = "", 0
+local HttpService = game:GetService("HttpService")
+
+function lEncode(data)
+    return HttpService:JSONEncode(data)
+end
+function lDecode(data)
+    return HttpService:JSONDecode(data)
+end
+local function lDigest(input)
+    local inputStr = tostring(input)
+    local hash = {}
+    for i = 1, #inputStr do
+        table.insert(hash, string.byte(inputStr, i))
+    end
+    local hashHex = ""
+    for _, byte in ipairs(hash) do
+        hashHex = hashHex .. string.format("%02x", byte)
+    end
+    return hashHex
+end
+
+local host = "https://api.platoboost.com"
+local hostResponse = fRequest({ Url = host .. "/public/connectivity", Method = "GET" })
+if hostResponse.StatusCode ~= 200 or hostResponse.StatusCode ~= 429 then
+    host = "https://api.platoboost.net"
+end
+
+function cacheLink()
+    if cachedTime + (10 * 60) < fOsTime() then
+        local response = fRequest({
+            Url = host .. "/public/start",
+            Method = "POST",
+            Body = lEncode({ service = service, identifier = lDigest(fGetHwid()) }),
+            Headers = { ["Content-Type"] = "application/json" }
+        })
+        if response.StatusCode == 200 then
+            local decoded = lDecode(response.Body)
+            if decoded.success == true then
+                cachedLink = decoded.data.url
+                cachedTime = fOsTime()
+                return true, cachedLink
+            else
+                onMessage(decoded.message)
+                return false, decoded.message
+            end
+        elseif response.StatusCode == 429 then
+            local msg = "you are being rate limited, please wait 20 seconds and try again."
+            onMessage(msg)
+            return false, msg
+        end
+        local msg = "Failed to cache link."
+        onMessage(msg)
+        return false, msg
+    else
+        return true, cachedLink
+    end
+end
+
+cacheLink()
+
+local generateNonce = function()
+    local str = ""
+    for _ = 1, 16 do
+        str = str .. fStringChar(fMathFloor(fMathRandom() * (122 - 97 + 1)) + 97)
+    end
+    return str
+end
+
+for _ = 1, 5 do
+    local oNonce = generateNonce()
+    task.wait(0.2)
+    if generateNonce() == oNonce then
+        local msg = "platoboost nonce error."
+        onMessage(msg)
+        error(msg)
+    end
+end
+
+local copyLink = function()
+    local success, link = cacheLink()
+    if success then
+        print("SetClipboard")
+        fSetClipboard(link)
+    end
+end
+
+local redeemKey = function(key)
+    local nonce = generateNonce()
+    local endpoint = host .. "/public/redeem/" .. fToString(service)
+    local body = { identifier = lDigest(fGetHwid()), key = key }
+    if useNonce then body.nonce = nonce end
+
+    local response = fRequest({
+        Url = endpoint,
+        Method = "POST",
+        Body = lEncode(body),
+        Headers = { ["Content-Type"] = "application/json" }
+    })
+
+    if response.StatusCode == 200 then
+        local decoded = lDecode(response.Body)
+        if decoded.success == true then
+            if decoded.data.valid == true then
+                if useNonce then
+                    if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. secret) then
+                        return true
+                    else
+                        onMessage("failed to verify integrity.")
+                        return false
+                    end
+                else
+                    return true
+                end
+            else
+                onMessage("key is invalid.")
+                return false
+            end
+        else
+            if fStringSub(decoded.message, 1, 27) == "unique constraint violation" then
+                onMessage("you already have an active key, please wait for it to expire before redeeming it.")
+                return false
+            else
+                onMessage(decoded.message)
+                return false
+            end
+        end
+    elseif response.StatusCode == 429 then
+        onMessage("you are being rate limited, please wait 20 seconds and try again.")
+        return false
+    else
+        onMessage("server returned an invalid status code, please try again later.")
+        return false
+    end
+end
+
+local verifyKey = function(key)
+    if requestSending == true then
+        onMessage("a request is already being sent, please slow down.")
+        return false
+    else
+        requestSending = true
+    end
+
+    local nonce = generateNonce()
+    local endpoint = host .. "/public/whitelist/" .. fToString(service) .. "?identifier=" .. lDigest(fGetHwid()) .. "&key=" .. key
+    if useNonce then endpoint = endpoint .. "&nonce=" .. nonce end
+
+    local response = fRequest({ Url = endpoint, Method = "GET" })
+    requestSending = false
+
+    if response.StatusCode == 200 then
+        local decoded = lDecode(response.Body)
+        if decoded.success == true and decoded.data.valid == true then
+            return true
+        else
+            if fStringSub(key, 1, 4) == "KEY_" then
+                return redeemKey(key)
+            else
+                onMessage("key is invalid.")
+                return false
+            end
+        end
+    elseif response.StatusCode == 429 then
+        onMessage("you are being rate limited, please wait 20 seconds and try again.")
+        return false
+    else
+        onMessage("server returned an invalid status code, please try again later.")
+        return false
+    end
+end
+
+local getFlag = function(name)
+    local nonce = generateNonce()
+    local endpoint = host .. "/public/flag/" .. fToString(service) .. "?name=" .. name
+    if useNonce then endpoint = endpoint .. "&nonce=" .. nonce end
+
+    local response = fRequest({ Url = endpoint, Method = "GET" })
+    if response.StatusCode == 200 then
+        local decoded = lDecode(response.Body)
+        if decoded.success == true then
+            if useNonce and decoded.data.hash == lDigest(fToString(decoded.data.value) .. "-" .. nonce .. "-" .. secret) then
+                return decoded.data.value
+            elseif not useNonce then
+                return decoded.data.value
+            end
+        else
+            onMessage(decoded.message)
+            return nil
+        end
+    end
+    return nil
+end
+
+--! Replacing GUI with Fluent
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local key = ""
-
 local Window = Fluent:CreateWindow({
-		Title = "Key System",
-		SubTitle = "HackManHub",
-		TabWidth = 160,
-		Size = UDim2.fromOffset(580, 340),
-		Acrylic = false,
-		Theme = "Dark",
-		MinimizeKey = Enum.KeyCode.LeftControl
+    Title = "HackManHub Key System",
+    SubTitle = "Beta",
+    TabWidth = 90,
+    Size = UDim2.fromOffset(525, 360),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.RightControl
 })
 
 local Tabs = {
-		KeySys = Window:AddTab({ Title = "Key System", Icon = "key" }),
+    Main = Window:AddTab({ Title = "Key", Icon = "key" }),
 }
 
-local Entkey = Tabs.KeySys:AddInput("Input", {
-		Title = "Enter Key Fremium/Premium",
-		Description = "Enter Key Here",
-		Default = "",
-		Placeholder = "Enter key…",
-		Numeric = false,
-		Finished = false,
-		Callback = function(Value)
-				key = Value
-		end
+local KeyInput = Tabs.Main:AddInput("KeyBox", {
+    Title = "Enter Key",
+    Placeholder = "Paste your key here",
 })
 
-local Checkkey = Tabs.KeySys:AddButton({
-		Title = "Check Key For Freemium",
-		Description = "Enter Key before pressing this button",
-		Callback = function()
-				local response = KeyGuardLibrary.validateDefaultKey(key)
-				if response == trueData then
-						loadstring(game:HttpGet("https://raw.githubusercontent.com/alieegemn/statviewguyme/refs/heads/main/freemium"))()
-						
-				else
-						print("Key is invalid try to use premium")
-				end
-		end
+Tabs.Main:AddButton({
+    Title = "Copy Key Link",
+    Description = "Copy the link to get key",
+    Callback = function()
+        copyLink()
+        Fluent:Notify({
+            Title = "Platoboost",
+            Content = "Key link copied!",
+            Duration = 4
+        })
+    end
 })
 
-local Checkkey = Tabs.KeySys:AddButton({
-		Title = "Check Key For Premium",
-		Description = "Enter Key before pressing this button",
-		Callback = function()
-				local response = KeyGuardLibrary.validatePremiumKey(key)
-				if response == trueData then
-						loadstring(game:HttpGet("https://raw.githubusercontent.com/alieegemn/statviewguyme/refs/heads/main/premium"))()
-				else
-						print("Key is invalid try to use freemium or your key got broken or get expired")
-				end
-		end
-})
-
-
-
-local Getkey = Tabs.KeySys:AddButton({
-		Title = "Get Key For Freemium",
-		Description = "Get Key here paste in to your browser it tooks 3 steps its keysystem",
-		Callback = function()
-				setclipboard(KeyGuardLibrary.getLink())
-   	Fluent:Notify({
-    	Title = "HackManHub",
-  	Content = "Coped On Clipboard",
-   	Duration = 8
-	})
-		end
-})
-
-local Getkey = Tabs.KeySys:AddButton({
-		Title = "Get Key For Premium",
-		Description = "Get Key here paste in to your browser it worth bec it will be more paid scripts and it will took longer to do checkpoints in future",
-		Callback = function()
-				setclipboard("hackmanhub.pages.dev")
-       	Fluent:Notify({
-    	Title = "HackManHub",
-  	Content = "Coped On Clipboard",
-   	Duration = 8
-	})
-		end
+Tabs.Main:AddButton({
+    Title = "Check Key",
+    Description = "Key Can Be Preemium/Freemium",
+    Callback = function()
+        local key = KeyInput.Value
+        if not key or key == "" then
+            Fluent:Notify({ Title = "Error", Content = "No key provided.", Duration = 3 })
+            return
+        end
+        local valid = verifyKey(key)
+        if valid then
+            Fluent:Notify({ Title = "Verified", Content = "Access granted.", Duration = 5 })
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/alieegemn/statviewguyme/refs/heads/main/main.txt"))()
+        else
+            Fluent:Notify({ Title = "Invalid Key", Content = "Access denied.", Duration = 5 })
+        end
+    end
 })
 
 Window:SelectTab(1)
