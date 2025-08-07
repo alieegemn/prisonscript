@@ -1,6 +1,6 @@
 --! Initialization and Platoboost setup (same as your original, untouched)
-local service = 5314
-local secret = "f9a1ecc6-adef-4caa-bd8f-7b7495c6a154"
+local service = inv
+local secret = "inv"
 local useNonce = true
 
 local onMessage = function(message)
